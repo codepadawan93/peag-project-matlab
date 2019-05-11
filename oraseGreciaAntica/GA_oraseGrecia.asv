@@ -1,0 +1,68 @@
+function [sol,val] = GA_oraseGrecia(citySize,dim,MAX,pc,pm,ni)
+%% Parametrii functiei
+confMatrix=zeros(citySize, citySize);
+%we initialize a random map of conflicts to work with
+for i=1:citySize
+    for j = i+1:citySize
+        %we make it so that there is a 75% chance that two cities don't
+        %support eachother
+        %the higher the pro
+        code = unidrnd(4);
+        if code ~= 1
+            confMatrix(i,j) = 1;
+        %we are assuming the conflict is mutual (symetric matrix)
+            confMatrix(j,i) = 1;
+        end   
+    end
+end
+disp('The conflictual map is');
+disp(confMatrix);
+%% Exemple de apel
+% [sol,val] = GA_oraseGrecia(10,200,150,0.8,0.1,20);
+% [sol,val] = GA_oraseGrecia(16,200,250,0.8,0.1,20);
+% [sol,val] = GA_oraseGrecia(16,400,350,0.8,0.1,40);
+%% Implementare
+
+%genereaza populatia initiala si calculeaza fitness-ul maxim
+Pop=gen_pop(dim,citySize, confMatrix);
+fitmax=max(Pop(:,citySize+1));
+valori_max=[fitmax];
+it=1;
+OK=1;
+% OK=1 daca exista macar 2 valori ale functiei fitness in populatie
+while it<=MAX && fitmax<citySize*(citySize-1)/2 &&OK
+    % selectie parinti
+     %Parinti=selectie_ruleta(Pop,dim,citySize);
+     % recombinare
+      O=crossover_pop(Pop,dim,citySize,pc, confMatrix);
+      %mutatie
+       MO = mutatie_pop(O,dim,citySize,pm, confMatrix);
+       %selectia generatiei urmatoare
+       GenUrm = Genitor(Pop,MO,dim,citySize+1,ni);
+       % numararea generatiilor cosecutive cu cel mai bun individ
+       % aproximativ la fel de bun
+       fitmax1=max(GenUrm(:,citySize+1));
+       fitmin=min(GenUrm(:,citySize+1));
+       OK= fitmin~=fitmax1;
+       fitmax=fitmax1;
+       valori_max= [valori_max fitmax];
+       it=it+1;
+       Pop=GenUrm;
+end
+ %% Afisare rezultate
+ figure
+ x=1:length(valori_max);
+ %y=citySize*(citySize-1)/2-valori_max(x);
+ y=valori_max(x);
+ plot(x,y,'--rs','LineWidth',2,...
+                'MarkerEdgeColor','k',...
+                'MarkerFaceColor','g',...
+                'MarkerSize',10);
+ title('Evolutia celui mai bun individ');
+ disp('Cel mai bun individ:');
+ [val,poz]=max(Pop(:,citySize+1)); sol=Pop(poz,1:citySize);
+ %val=citySize*(citySize-1)/2-val;
+ disp(sol);
+ disp(['Numarul de orase asezate fara conflict:' num2str(val)]);
+end
+
